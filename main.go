@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -58,7 +57,9 @@ func main() {
 		flags.Platforms,
 		flags.Push,
 	); err != nil {
-		log.Panic(err)
+		fmt.Fprintf(os.Stderr,
+			"Build failed %s", fullName)
+		os.Exit(2)
 	}
 
 	fmt.Printf("Published %s\n", fullName)
