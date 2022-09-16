@@ -9,6 +9,25 @@ import (
 	"github.com/kellegous/buildimg/pkg"
 )
 
+func createBuilder(root string) (func() error, error) {
+	cmd := exec.Command("docker", "buildx", "create", "--use")
+	cmd.Dir = root
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	return func() error {
+		cmd := exec.Command("docker", "buildx", "rm")
+		cmd.Dir = root
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	}, nil
+}
+
 func Build(
 	root string,
 	name string,
@@ -16,13 +35,11 @@ func Build(
 	platforms []string,
 	push bool,
 ) error {
-	ca := exec.Command("docker", "buildx", "create", "--use")
-	ca.Dir = root
-	ca.Stdout = os.Stdout
-	ca.Stderr = os.Stderr
-	if err := ca.Run(); err != nil {
+	done, err := createBuilder(root)
+	if err != nil {
 		return err
 	}
+	defer done()
 
 	cmd := []string{
 		"buildx",
