@@ -50,6 +50,8 @@ func Build(
 
 	if push {
 		cmd = append(cmd, "--push")
+	} else {
+		cmd = append(cmd, "--load")
 	}
 
 	cmd = append(cmd, "-t", name, ".")
