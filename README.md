@@ -2,6 +2,14 @@
 
 [Docker](https://docker.com/) now has multi-platform builds via BuildKit (the `buildx` subcommand). For folks, like myself, working on a Macbook running Apple Silicon, this is both a blessing and a curse. It's a blessing because it makes it possible to build `linux/amd64` images even though I'm running on an ARM CPU. It's a curse because it's a complicated Inception-esque stack of virtualization. `buildimg` is a simple command I use to automate building and publishing multi-platform images. In particular, I have a number of projects where the containers run on `linux/amd64` but are developed on my laptop, which natively produces `linux/arm64`.
 
+## Installation
+
+`buildimg` is a plain ole [Go](https://golang.org/) and can be installed using `go install` kind of like this:
+
+```
+go install github.com/kellegous/buildimg@latest
+```
+
 ## Examples
 
 The best way to explain how `buildimg` works is to just look at some examples.
