@@ -1,85 +1,102 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 
 	"github.com/kellegous/buildimg/pkg"
+	"github.com/spf13/cobra"
 )
 
-func createBuilder(root string) (func() error, error) {
-	cmd := exec.Command("docker", "buildx", "create", "--use")
-	cmd.Dir = root
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func getTagFromGit(ctx context.Context) (string, error) {
+	var buf bytes.Buffer
 
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	cmd.Stdout = &buf
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return func() error {
-		cmd := exec.Command("docker", "buildx", "rm")
-		cmd.Dir = root
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}, nil
+	sha := strings.TrimSpace(buf.String())
+	if len(sha) > 8 {
+		sha = sha[:8]
+	}
+
+	return sha, nil
 }
 
-func Build(
-	root string,
-	name string,
-	dockerFile string,
-	platforms []string,
-	push bool,
-) error {
-	done, err := createBuilder(root)
-	if err != nil {
-		return err
+func Command() *cobra.Command {
+	var targets pkg.Targets
+	var root, dockerfile, tag string
+	cmd := &cobra.Command{
+		Use:   "buildimg [flags] name",
+		Short: "automation for building and pushing images",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, done := signal.NotifyContext(
+				context.Background(),
+				os.Interrupt)
+			defer done()
+
+			var err error
+
+			if tag == "" {
+				tag, err = getTagFromGit(ctx)
+				if err != nil {
+					cmd.PrintErrf("git rev-parse: %s", err)
+					os.Exit(1)
+				}
+			}
+
+			image := pkg.Image{
+				Root:     root,
+				Dockfile: dockerfile,
+				Name:     fmt.Sprintf("%s:%s", args[0], tag),
+				Targets:  targets,
+			}
+
+			if err := image.Build(ctx); err != nil {
+				cmd.PrintErrf("build failed: %s", err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("%s\n", image.Name)
+		},
 	}
-	defer done()
 
-	cmd := []string{
-		"buildx",
-		"build",
-		fmt.Sprintf("--platform=%s", strings.Join(platforms, ",")),
-		fmt.Sprintf("--file=%s", dockerFile),
-	}
+	cmd.Flags().Var(
+		&targets,
+		"target",
+		"a build target (i.e. linux/amd64)")
 
-	if push {
-		cmd = append(cmd, "--push")
-	} else {
-		cmd = append(cmd, "--load")
-	}
+	cmd.Flags().StringVar(
+		&root,
+		"root",
+		".",
+		"the build context directory")
 
-	cmd = append(cmd, "-t", name, ".")
+	cmd.Flags().StringVar(
+		&dockerfile,
+		"dockerfile",
+		"./Dockerfile",
+		"the Dockerfile to use for the build")
 
-	cb := exec.Command("docker", cmd...)
-	cb.Dir = root
-	cb.Stdout = os.Stdout
-	cb.Stderr = os.Stderr
+	cmd.Flags().StringVar(
+		&tag,
+		"tag",
+		"",
+		"the image tag for the build (default is based on git sha)")
 
-	return cb.Run()
+	return cmd
 }
 
 func main() {
-	var flags pkg.Flags
-	name := flags.Parse()
-
-	fullName := fmt.Sprintf("%s:%s", name, flags.Version)
-	if err := Build(
-		flags.Root,
-		fullName,
-		flags.Dockerfile,
-		flags.Platforms,
-		flags.Push,
-	); err != nil {
-		fmt.Fprintf(os.Stderr,
-			"Build failed %s", fullName)
-		os.Exit(2)
+	if err := Command().Execute(); err != nil {
+		os.Exit(1)
 	}
-
-	fmt.Printf("Published %s\n", fullName)
 }
