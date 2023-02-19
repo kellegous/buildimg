@@ -36,7 +36,7 @@ Again, multiple `--target` flags can be specified, each with a destination file 
 $ buildimg --target=linux/amd64:example-amd64.tar --target=linux/arm64:example-arm64.tar kellegous/example
 ```
 
-Generally, any target that specifies a destination path (i.e. `linux/arm64:example.tar`) will be exported to a local tarbar and any target that does not specify a destination path will be pushed. So for instance, the following command exports a `linux/arm64` build to the local file `example.tar` and also pushes a `linux/amd64` build to the [https://docker.io/](http://docker.io/) registry.
+Generally, any target that specifies a destination path (i.e. `linux/arm64:example.tar`) will be exported to a local tarbar and any target that does not specify a destination path will be pushed. So for instance, the following command exports a `linux/arm64` build to the local file `example.tar` and also pushes a `linux/amd64` build to the [docker.io](http://hub.docker.com/) registry.
 
 ```
 $ buildimg --target=linux/arm64:example.tar --target=linux/amd64 kellegous/example
