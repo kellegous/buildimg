@@ -32,7 +32,7 @@ func getTagFromGit(ctx context.Context) (string, error) {
 
 func Command() *cobra.Command {
 	var targets pkg.Targets
-	var root, dockerfile, tag string
+	var root, dockerfile, tag, builder string
 	cmd := &cobra.Command{
 		Use:   "buildimg [flags] name",
 		Short: "automation for building and pushing images",
@@ -53,6 +53,13 @@ func Command() *cobra.Command {
 				}
 			}
 
+			b, err := pkg.StartBuilder(ctx, root, builder)
+			if err != nil {
+				cmd.PrintErrf("start builder: %s", err)
+				os.Exit(1)
+			}
+			defer b.Shutdown(context.Background())
+
 			image := pkg.Image{
 				Root:     root,
 				Dockfile: dockerfile,
@@ -60,8 +67,8 @@ func Command() *cobra.Command {
 				Targets:  targets,
 			}
 
-			if err := image.Build(ctx); err != nil {
-				cmd.PrintErrf("build failed: %s", err)
+			if err := b.Build(ctx, &image); err != nil {
+				cmd.PrintErrf("build: %s", err)
 				os.Exit(1)
 			}
 
@@ -91,6 +98,12 @@ func Command() *cobra.Command {
 		"tag",
 		"",
 		"the image tag for the build (default is based on git sha)")
+
+	cmd.Flags().StringVar(
+		&builder,
+		"builder",
+		"",
+		"the name of the builder to use")
 
 	return cmd
 }
