@@ -1,10 +1,11 @@
 package pkg
 
 type Image struct {
-	Root     string
-	Dockfile string
-	Name     string
-	Targets  []*Target
+	Root      string
+	Dockfile  string
+	Name      string
+	Targets   []*Target
+	BuildArgs BuildArgs
 }
 
 func (i *Image) toBuildCmds() []*buildCmd {
@@ -22,6 +23,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Name:       i.Name,
 			Platforms:  []string{target.Platform},
 			Dest:       target.Output,
+			BuildArgs:  i.BuildArgs,
 		})
 	}
 
@@ -31,6 +33,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Dockerfile: i.Dockfile,
 			Name:       i.Name,
 			Platforms:  toPush,
+			BuildArgs:  i.BuildArgs,
 		})
 	}
 
@@ -43,4 +46,5 @@ type buildCmd struct {
 	Name       string
 	Platforms  []string
 	Dest       string
+	BuildArgs  []string
 }

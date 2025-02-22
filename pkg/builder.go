@@ -66,6 +66,10 @@ func (b *Builder) build(
 		fmt.Sprintf("--builder=%s", b.name),
 	}
 
+	for _, arg := range c.BuildArgs {
+		args = append(args, "--build-arg", arg)
+	}
+
 	if c.Dest == "" {
 		args = append(args, "--push")
 	} else {
