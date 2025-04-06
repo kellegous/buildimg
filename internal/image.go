@@ -5,7 +5,8 @@ type Image struct {
 	Dockfile  string
 	Name      string
 	Targets   []*Target
-	BuildArgs BuildArgs
+	BuildArgs []string
+	Labels    []string
 }
 
 func (i *Image) toBuildCmds() []*buildCmd {
@@ -24,6 +25,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Platforms:  []string{target.Platform},
 			Dest:       target.Output,
 			BuildArgs:  i.BuildArgs,
+			Labels:     i.Labels,
 		})
 	}
 
@@ -34,6 +36,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Name:       i.Name,
 			Platforms:  toPush,
 			BuildArgs:  i.BuildArgs,
+			Labels:     i.Labels,
 		})
 	}
 
@@ -47,4 +50,5 @@ type buildCmd struct {
 	Platforms  []string
 	Dest       string
 	BuildArgs  []string
+	Labels     []string
 }

@@ -70,6 +70,10 @@ func (b *Builder) build(
 		args = append(args, "--build-arg", arg)
 	}
 
+	for _, label := range c.Labels {
+		args = append(args, "--label", label)
+	}
+
 	if c.Dest == "" {
 		args = append(args, "--push")
 	} else {

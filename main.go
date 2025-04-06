@@ -9,8 +9,9 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/kellegous/buildimg/internal"
 	"github.com/spf13/cobra"
+
+	"github.com/kellegous/buildimg/internal"
 )
 
 func getTagFromGit(ctx context.Context) (string, error) {
@@ -33,14 +34,16 @@ func getTagFromGit(ctx context.Context) (string, error) {
 func Command() *cobra.Command {
 	var targets internal.Targets
 	var root, dockerfile, tag, builder string
-	var buildArgs internal.BuildArgs
+	buildArgs := internal.NewStringsFlag("build args")
+	labels := internal.NewStringsFlag("labels")
+
 	cmd := &cobra.Command{
 		Use:   "buildimg [flags] name",
 		Short: "automation for building and pushing images",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, done := signal.NotifyContext(
-				context.Background(),
+				cmd.Context(),
 				os.Interrupt)
 			defer done()
 
@@ -66,7 +69,8 @@ func Command() *cobra.Command {
 				Dockfile:  dockerfile,
 				Name:      fmt.Sprintf("%s:%s", args[0], tag),
 				Targets:   targets,
-				BuildArgs: buildArgs,
+				BuildArgs: buildArgs.Vals,
+				Labels:    labels.Vals,
 			}
 
 			if err := b.Build(ctx, &image); err != nil {
@@ -87,6 +91,11 @@ func Command() *cobra.Command {
 		&buildArgs,
 		"build-arg",
 		"a build arg (i.e. FOO=bar)")
+
+	cmd.Flags().Var(
+		&labels,
+		"label",
+		"a label (i.e. FOO=bar)")
 
 	cmd.Flags().StringVar(
 		&root,
