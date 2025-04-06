@@ -1,4 +1,4 @@
-bin/buildimg: main.go $(shell find pkg -type f)
+bin/buildimg: main.go $(shell find internal -type f)
 	go build -o $@
 
 clean:

@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/kellegous/buildimg/pkg"
+	"github.com/kellegous/buildimg/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -31,9 +31,9 @@ func getTagFromGit(ctx context.Context) (string, error) {
 }
 
 func Command() *cobra.Command {
-	var targets pkg.Targets
+	var targets internal.Targets
 	var root, dockerfile, tag, builder string
-	var buildArgs pkg.BuildArgs
+	var buildArgs internal.BuildArgs
 	cmd := &cobra.Command{
 		Use:   "buildimg [flags] name",
 		Short: "automation for building and pushing images",
@@ -54,14 +54,14 @@ func Command() *cobra.Command {
 				}
 			}
 
-			b, err := pkg.StartBuilder(ctx, root, builder)
+			b, err := internal.StartBuilder(ctx, root, builder)
 			if err != nil {
 				cmd.PrintErrf("start builder: %s", err)
 				os.Exit(1)
 			}
 			defer b.Shutdown(context.Background())
 
-			image := pkg.Image{
+			image := internal.Image{
 				Root:      root,
 				Dockfile:  dockerfile,
 				Name:      fmt.Sprintf("%s:%s", args[0], tag),

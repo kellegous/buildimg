@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 type Image struct {
 	Root      string
