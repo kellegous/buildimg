@@ -7,6 +7,7 @@ type Image struct {
 	Targets   []*Target
 	BuildArgs []string
 	Labels    []string
+	Secrets   []string
 }
 
 func (i *Image) toBuildCmds() []*buildCmd {
@@ -26,6 +27,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Dest:       target.Output,
 			BuildArgs:  i.BuildArgs,
 			Labels:     i.Labels,
+			Secrets:    i.Secrets,
 		})
 	}
 
@@ -37,6 +39,7 @@ func (i *Image) toBuildCmds() []*buildCmd {
 			Platforms:  toPush,
 			BuildArgs:  i.BuildArgs,
 			Labels:     i.Labels,
+			Secrets:    i.Secrets,
 		})
 	}
 
@@ -51,4 +54,5 @@ type buildCmd struct {
 	Dest       string
 	BuildArgs  []string
 	Labels     []string
+	Secrets    []string
 }

@@ -36,6 +36,7 @@ func Command() *cobra.Command {
 	var root, dockerfile, tag, builder string
 	buildArgs := internal.NewStringsFlag("build args")
 	labels := internal.NewStringsFlag("labels")
+	secrets := internal.NewStringsFlag("secrets")
 
 	cmd := &cobra.Command{
 		Use:   "buildimg [flags] name",
@@ -71,6 +72,7 @@ func Command() *cobra.Command {
 				Targets:   targets,
 				BuildArgs: buildArgs.Vals,
 				Labels:    labels.Vals,
+				Secrets:   secrets.Vals,
 			}
 
 			if err := b.Build(ctx, &image); err != nil {
@@ -96,6 +98,12 @@ func Command() *cobra.Command {
 		&labels,
 		"label",
 		"a label (i.e. FOO=bar)")
+
+	cmd.Flags().Var(
+		&secrets,
+		"secret",
+		"a secret (i.e. id=github-token,src=github-token.txt)",
+	)
 
 	cmd.Flags().StringVar(
 		&root,

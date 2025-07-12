@@ -74,6 +74,10 @@ func (b *Builder) build(
 		args = append(args, "--label", label)
 	}
 
+	for _, secret := range c.Secrets {
+		args = append(args, "--secret", secret)
+	}
+
 	if c.Dest == "" {
 		args = append(args, "--push")
 	} else {
