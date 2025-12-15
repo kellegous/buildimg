@@ -1,20 +1,19 @@
-package internal
+package builder
 
 import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 	"sync"
 )
 
 type Builder struct {
 	lck         sync.Mutex
-	name        string
 	didShutdown bool
+	name        string
+	commander   Commander
 }
 
 func (b *Builder) Shutdown(ctx context.Context) error {
@@ -25,19 +24,16 @@ func (b *Builder) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	cmd := exec.CommandContext(
+	if err := b.commander.Command(
 		ctx,
 		"docker",
 		"buildx",
 		"rm",
-		b.name)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+		b.name,
+	).Run(); err != nil {
 		return err
 	}
+
 	b.didShutdown = true
 	return nil
 }
@@ -86,53 +82,49 @@ func (b *Builder) build(
 			fmt.Sprintf("type=docker,dest=%s", c.Dest))
 	}
 
-	args = append(args, "-t", c.Name, c.Root)
+	args = append(args, "-t", c.Name, c.Path)
 
-	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return b.commander.Command(ctx, "docker", args...).Run()
 }
 
-func StartBuilder(
+func Start(
 	ctx context.Context,
 	root string,
-	name string,
+	opts ...BuilderOption,
 ) (*Builder, error) {
-	name, err := nameForBuilder(name)
-	if err != nil {
+	var b Builder
+
+	for _, opt := range opts {
+		opt(&b)
+	}
+
+	if b.name == "" {
+		b.name = generateName()
+	}
+
+	if b.commander == nil {
+		b.commander = &defaultCommander{}
+	}
+
+	if err := b.start(ctx); err != nil {
 		return nil, err
 	}
 
-	cmd := exec.CommandContext(
+	return &b, nil
+}
+
+func (b *Builder) start(ctx context.Context) error {
+	return b.commander.Command(
 		ctx,
 		"docker",
 		"buildx",
 		"create",
 		"--name",
-		name)
-
-	cmd.Dir = root
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
-
-	return &Builder{name: name}, nil
+		b.name,
+	).Run()
 }
-
-func nameForBuilder(name string) (string, error) {
-	if name != "" {
-		return name, nil
-	}
-
+func generateName() string {
 	var key [8]byte
-	if _, err := rand.Read(key[:]); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("buildimg-%s", hex.EncodeToString(key[:])), nil
+	rand.Read(key[:])
+	return fmt.Sprintf("buildimg-%s", hex.EncodeToString(key[:]))
 }

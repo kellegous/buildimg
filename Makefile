@@ -1,4 +1,4 @@
-bin/buildimg: main.go $(shell find internal -type f)
+bin/buildimg: main.go $(shell find internal builder -name '*.go')
 	go build -o $@
 
 clean:

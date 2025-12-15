@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kellegous/buildimg/builder"
 	"github.com/kellegous/buildimg/internal"
 )
 
@@ -32,8 +33,8 @@ func getTagFromGit(ctx context.Context) (string, error) {
 }
 
 func Command() *cobra.Command {
-	var targets internal.Targets
-	var root, dockerfile, tag, builder string
+	var targets builder.Targets
+	var root, dockerfile, tag, builderName string
 	buildArgs := internal.NewStringsFlag("build args")
 	labels := internal.NewStringsFlag("labels")
 	secrets := internal.NewStringsFlag("secrets")
@@ -58,21 +59,21 @@ func Command() *cobra.Command {
 				}
 			}
 
-			b, err := internal.StartBuilder(ctx, root, builder)
+			b, err := builder.Start(ctx, root, builder.WithName(builderName))
 			if err != nil {
 				cmd.PrintErrf("start builder: %s", err)
 				os.Exit(1)
 			}
 			defer b.Shutdown(context.Background())
 
-			image := internal.Image{
-				Root:      root,
-				Dockfile:  dockerfile,
-				Name:      fmt.Sprintf("%s:%s", args[0], tag),
-				Targets:   targets,
-				BuildArgs: buildArgs.Vals,
-				Labels:    labels.Vals,
-				Secrets:   secrets.Vals,
+			image := builder.Image{
+				Path:       root,
+				Dockerfile: dockerfile,
+				Name:       fmt.Sprintf("%s:%s", args[0], tag),
+				Targets:    targets,
+				BuildArgs:  buildArgs.Vals,
+				Labels:     labels.Vals,
+				Secrets:    secrets.Vals,
 			}
 
 			if err := b.Build(ctx, &image); err != nil {
@@ -124,7 +125,7 @@ func Command() *cobra.Command {
 		"the image tag for the build (default is based on git sha)")
 
 	cmd.Flags().StringVar(
-		&builder,
+		&builderName,
 		"builder",
 		"",
 		"the name of the builder to use")
