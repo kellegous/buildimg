@@ -64,7 +64,7 @@ func Command() *cobra.Command {
 				path = filepath.Dir(dockerfile)
 			}
 
-			b, err := builder.Start(ctx, path, builder.WithName(builderName))
+			b, err := builder.Start(ctx, builder.WithName(builderName))
 			if err != nil {
 				cmd.PrintErrf("start builder: %s", err)
 				os.Exit(1)

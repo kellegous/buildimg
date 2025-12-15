@@ -89,21 +89,16 @@ func (b *Builder) build(
 
 func Start(
 	ctx context.Context,
-	root string,
 	opts ...BuilderOption,
 ) (*Builder, error) {
-	var b Builder
-
+	var o BuilderOptions
 	for _, opt := range opts {
-		opt(&b)
+		opt(&o)
 	}
 
-	if b.name == "" {
-		b.name = generateName()
-	}
-
-	if b.commander == nil {
-		b.commander = &defaultCommander{}
+	b := Builder{
+		commander: o.getCommander(),
+		name:      o.getNameGenerator()(),
 	}
 
 	if err := b.start(ctx); err != nil {
@@ -123,7 +118,8 @@ func (b *Builder) start(ctx context.Context) error {
 		b.name,
 	).Run()
 }
-func generateName() string {
+
+func defaultIdGenerator() string {
 	var key [8]byte
 	rand.Read(key[:])
 	return fmt.Sprintf("buildimg-%s", hex.EncodeToString(key[:]))
