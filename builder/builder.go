@@ -42,7 +42,7 @@ func (b *Builder) Build(
 	ctx context.Context,
 	img *Image,
 ) error {
-	for _, cmd := range img.toBuildCmds() {
+	for cmd := range img.toBuildCmds() {
 		if err := b.build(ctx, cmd); err != nil {
 			return err
 		}

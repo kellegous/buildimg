@@ -1,5 +1,7 @@
 package builder
 
+import "iter"
+
 type Image struct {
 	Path       string
 	Dockerfile string
@@ -10,34 +12,33 @@ type Image struct {
 	Secrets    []string
 }
 
-func (i *Image) toBuildCmds() []*buildCmd {
-	var toPush []*Target
-	var cmds []*buildCmd
-	for _, target := range i.Targets {
-		if target.push() {
-			toPush = append(toPush, target)
-			continue
+func (i *Image) toBuildCmds() iter.Seq[*buildCmd] {
+	return func(yield func(*buildCmd) bool) {
+		var platformsToPush []string
+
+		for _, target := range i.Targets {
+			if target.push() {
+				platformsToPush = append(platformsToPush, target.Platform)
+			} else {
+				if !yield(&buildCmd{
+					Image:     i,
+					Platforms: []string{target.Platform},
+					Dest:      target.Output,
+				}) {
+					return
+				}
+			}
 		}
 
-		cmds = append(cmds, &buildCmd{
-			Image:     i,
-			Platforms: []string{target.Platform},
-			Dest:      target.Output,
-		})
-	}
-
-	if len(toPush) > 0 {
-		platforms := make([]string, 0, len(toPush))
-		for _, target := range toPush {
-			platforms = append(platforms, target.Platform)
+		if len(platformsToPush) > 0 {
+			if !yield(&buildCmd{
+				Image:     i,
+				Platforms: platformsToPush,
+			}) {
+				return
+			}
 		}
-		cmds = append(cmds, &buildCmd{
-			Image:     i,
-			Platforms: platforms,
-		})
 	}
-
-	return cmds
 }
 
 type buildCmd struct {
