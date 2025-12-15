@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -34,7 +35,7 @@ func getTagFromGit(ctx context.Context) (string, error) {
 
 func Command() *cobra.Command {
 	var targets builder.Targets
-	var root, dockerfile, tag, builderName string
+	var path, dockerfile, tag, builderName string
 	buildArgs := internal.NewStringsFlag("build args")
 	labels := internal.NewStringsFlag("labels")
 	secrets := internal.NewStringsFlag("secrets")
@@ -59,7 +60,11 @@ func Command() *cobra.Command {
 				}
 			}
 
-			b, err := builder.Start(ctx, root, builder.WithName(builderName))
+			if path == "" {
+				path = filepath.Dir(dockerfile)
+			}
+
+			b, err := builder.Start(ctx, path, builder.WithName(builderName))
 			if err != nil {
 				cmd.PrintErrf("start builder: %s", err)
 				os.Exit(1)
@@ -67,7 +72,7 @@ func Command() *cobra.Command {
 			defer b.Shutdown(context.Background())
 
 			image := builder.Image{
-				Path:       root,
+				Path:       path,
 				Dockerfile: dockerfile,
 				Name:       fmt.Sprintf("%s:%s", args[0], tag),
 				Targets:    targets,
@@ -107,9 +112,9 @@ func Command() *cobra.Command {
 	)
 
 	cmd.Flags().StringVar(
-		&root,
-		"root",
-		".",
+		&path,
+		"path",
+		"",
 		"the build context directory")
 
 	cmd.Flags().StringVar(
