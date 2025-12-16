@@ -1,5 +1,10 @@
 package builder
 
+import (
+	"io"
+	"os"
+)
+
 type BuilderOptions struct {
 	commander     Commander
 	nameGenerator func() string
@@ -7,7 +12,10 @@ type BuilderOptions struct {
 
 func (o *BuilderOptions) getCommander() Commander {
 	if o.commander == nil {
-		return &defaultCommander{}
+		return &defaultCommander{
+			stdout: os.Stdout,
+			stderr: os.Stderr,
+		}
 	}
 	return o.commander
 }
@@ -39,6 +47,15 @@ func WithName(name string) BuilderOption {
 			o.nameGenerator = func() string {
 				return name
 			}
+		}
+	}
+}
+
+func WithStdIO(stdout, stderr io.Writer) BuilderOption {
+	return func(o *BuilderOptions) {
+		o.commander = &defaultCommander{
+			stdout: stdout,
+			stderr: stderr,
 		}
 	}
 }
