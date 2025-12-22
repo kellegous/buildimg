@@ -8,6 +8,7 @@ import (
 type BuilderOptions struct {
 	commander     Commander
 	nameGenerator func() string
+	outputFormat  OutputFormat
 }
 
 func (o *BuilderOptions) getCommander() Commander {
@@ -57,5 +58,11 @@ func WithStdIO(stdout, stderr io.Writer) BuilderOption {
 			stdout: stdout,
 			stderr: stderr,
 		}
+	}
+}
+
+func WithOutputFormat(format OutputFormat) BuilderOption {
+	return func(o *BuilderOptions) {
+		o.outputFormat = format
 	}
 }

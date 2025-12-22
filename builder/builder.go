@@ -10,10 +10,11 @@ import (
 )
 
 type Builder struct {
-	lck         sync.Mutex
-	didShutdown bool
-	name        string
-	commander   Commander
+	lck          sync.Mutex
+	didShutdown  bool
+	name         string
+	commander    Commander
+	outputFormat OutputFormat
 }
 
 func (b *Builder) Shutdown(ctx context.Context) error {
@@ -60,6 +61,10 @@ func (b *Builder) build(
 		fmt.Sprintf("--platform=%s", strings.Join(c.Platforms, ",")),
 		fmt.Sprintf("--file=%s", c.Dockerfile),
 		fmt.Sprintf("--builder=%s", b.name),
+	}
+
+	if b.outputFormat != "" {
+		args = append(args, fmt.Sprintf("--progress=%s", b.outputFormat))
 	}
 
 	for _, arg := range c.BuildArgs {
