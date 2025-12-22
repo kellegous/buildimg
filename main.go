@@ -39,6 +39,7 @@ func Command() *cobra.Command {
 	buildArgs := internal.NewStringsFlag("build args")
 	labels := internal.NewStringsFlag("labels")
 	secrets := internal.NewStringsFlag("secrets")
+	var outputFormat builder.OutputFormat
 
 	cmd := &cobra.Command{
 		Use:   "buildimg [flags] name",
@@ -64,7 +65,14 @@ func Command() *cobra.Command {
 				path = filepath.Dir(dockerfile)
 			}
 
-			b, err := builder.Start(ctx, builder.WithName(builderName))
+			opts := []builder.BuilderOption{
+				builder.WithName(builderName),
+			}
+			if outputFormat.IsValid() {
+				opts = append(opts, builder.WithOutputFormat(outputFormat))
+			}
+
+			b, err := builder.Start(ctx, opts...)
 			if err != nil {
 				cmd.PrintErrf("start builder: %s", err)
 				os.Exit(1)
@@ -134,6 +142,11 @@ func Command() *cobra.Command {
 		"builder",
 		"",
 		"the name of the builder to use")
+
+	cmd.Flags().Var(
+		&outputFormat,
+		"output",
+		"the output format to use (i.e. json, plain, auto, none, tty, quiet)")
 
 	return cmd
 }

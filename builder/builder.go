@@ -63,7 +63,7 @@ func (b *Builder) build(
 		fmt.Sprintf("--builder=%s", b.name),
 	}
 
-	if b.outputFormat != "" {
+	if b.outputFormat.IsValid() {
 		args = append(args, fmt.Sprintf("--progress=%s", b.outputFormat))
 	}
 
@@ -102,8 +102,9 @@ func Start(
 	}
 
 	b := Builder{
-		commander: o.getCommander(),
-		name:      o.getNameGenerator()(),
+		commander:    o.getCommander(),
+		name:         o.getNameGenerator()(),
+		outputFormat: o.outputFormat,
 	}
 
 	if err := b.start(ctx); err != nil {
